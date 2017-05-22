@@ -19,30 +19,31 @@ import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
 
+@SuppressWarnings("serial")
 public class MainFrame extends JFrame {
-	
+
 	private JPanel imagePanel;
-	
+
 	private JPanel buttonPanel;
 	private JButton leftButton;
 	private JButton rightButton;
 	private JButton saveButton;
 	private JButton undoButton;
-	
+
 	private RectMaker rectMaker;
 	private ImageGetter imageGetter;
-	
+
 	private File currentImg;
 	private int imgWidth, imgHeight;
-	
+
 	public MainFrame(ImageGetter imageGetter, RectMaker rectMaker) {
-		
+
 		this.imageGetter = imageGetter;
 		this.rectMaker = rectMaker;
-		
+
 		setTitle("Rect Maker");
 		setLayout(new BorderLayout());
-		
+
 		/* img panel */
 		imagePanel = new JPanel(new BorderLayout());
 		attachImage(imageGetter.getCurrentImage());
@@ -70,15 +71,15 @@ public class MainFrame extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 			}
 		});
-		
+
 		buttonPanel.setLayout(new GridLayout(1, 4));
 		buttonPanel.add(leftButton);
 		buttonPanel.add(rightButton);
 		buttonPanel.add(saveButton);
 		buttonPanel.add(undoButton);
-		
+
 		add(buttonPanel, BorderLayout.NORTH);
-		
+
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setResizable(false);
 		pack();
@@ -89,43 +90,42 @@ public class MainFrame extends JFrame {
 	private void attachImage(File img){
 		try{
 			currentImg = img;
-			
+
 			BufferedImage bufferedImage = ImageIO.read(img);
 			ImageIcon imageIcon = new ImageIcon(ImageIO.read(img));
-			
+
 			imagePanel.removeAll();
-			
+
 			imagePanel.add(new JLabel(imageIcon), BorderLayout.CENTER);
-			
+
 			imgWidth = bufferedImage.getWidth();
 			imgHeight = bufferedImage.getHeight();
 			imagePanel.setSize(imgWidth, imgHeight);
-			
-			
+
+
 			imagePanel.revalidate();
 			imagePanel.repaint();
 			System.out.println(img.getName()+"("+bufferedImage.getWidth() + "*" + bufferedImage.getHeight()+")");
 			
 		}
-		 catch (IOException ioEx) {
+		catch (IOException ioEx) {
 			ioEx.printStackTrace();
-		 }
+		}
 	}
-	
+
 	class ImagePanelMouseListener implements MouseListener,MouseMotionListener{
 
 		private int startX, startY;
 		private int endX, endY;
-		private Graphics graphics;
-		
-		
+
+
 		@Override
 		public void mouseReleased(MouseEvent e) {
-			
+
 			if(e.getX() < 0) endX = 0;
 			else if(e.getX() > imgWidth) endX = imgWidth;
 			else endX = e.getX();
-			
+
 			if(e.getY() < 0) endY = 0;
 			else if(e.getY() > imgHeight) endY = imgHeight;
 			else endY = e.getY();
@@ -138,7 +138,7 @@ public class MainFrame extends JFrame {
 		}
 		@Override
 		public void mouseDragged(MouseEvent e) {
-			graphics = imagePanel.getGraphics();
+			Graphics graphics = imagePanel.getGraphics();
 
 			graphics.drawLine(startX, startY, startX, e.getY());
 			graphics.drawLine(startX, startY, e.getX(), startY);
@@ -158,11 +158,11 @@ public class MainFrame extends JFrame {
 	class arrowButtonButtonListener implements ActionListener{
 
 		private boolean isLeft;
-		
+
 		public arrowButtonButtonListener(boolean isLeft) {
 			this.isLeft = isLeft; 
 		}
-		
+
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			try{
@@ -173,6 +173,6 @@ public class MainFrame extends JFrame {
 				JOptionPane.showMessageDialog(null, ex.getMessage());
 			}
 		}
-		
+
 	}
 }
