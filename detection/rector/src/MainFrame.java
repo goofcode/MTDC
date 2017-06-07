@@ -1,20 +1,11 @@
 import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
+import javax.swing.*;
 
 
 import java.awt.BorderLayout;
 import java.awt.Graphics;
 import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
+import java.awt.event.*;
 import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
@@ -36,7 +27,7 @@ public class MainFrame extends JFrame {
 	private File currentImg;
 	private int imgWidth, imgHeight;
 
-	public MainFrame(ImageGetter imageGetter, RectMaker rectMaker) {
+    public MainFrame(ImageGetter imageGetter, RectMaker rectMaker) {
 
 		this.imageGetter = imageGetter;
 		this.rectMaker = rectMaker;
@@ -51,6 +42,7 @@ public class MainFrame extends JFrame {
 		imagePanel.addMouseListener(imagePanelMouseListener);
 		imagePanel.addMouseMotionListener(imagePanelMouseListener);
 		add(imagePanel, BorderLayout.CENTER);
+
 
 		/* button panel */
 		buttonPanel = new JPanel();
@@ -118,7 +110,6 @@ public class MainFrame extends JFrame {
 		private int startX, startY;
 		private int endX, endY;
 
-
 		@Override
 		public void mouseReleased(MouseEvent e) {
 
@@ -146,14 +137,11 @@ public class MainFrame extends JFrame {
 			graphics.drawLine(e.getX(), startY, e.getX(), e.getY());
 			imagePanel.repaint();
 		}
-		@Override
-		public void mouseClicked(MouseEvent e) {
-		}
+		//unimplemented methods
+		public void mouseClicked(MouseEvent e) {}
 		public void mouseEntered(MouseEvent e) {}
 		public void mouseExited(MouseEvent e) {}
-		@Override
-		public void mouseMoved(MouseEvent e) {
-		}
+		public void mouseMoved(MouseEvent e) {}
 	}
 	class arrowButtonButtonListener implements ActionListener{
 
