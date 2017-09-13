@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    tools:context=".ControlModeActivity">
+
+    <kr.ac.cau.goofcode.MTDC.Streamer
+        android:id="@+id/streamer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/transparent"
+        android:baselineAligned="false"
+        android:orientation="horizontal"
+        android:weightSum="7">
+
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="3">
+
+            <kr.ac.cau.goofcode.MTDC.ControlPad
+                android:id="@+id/left_control_pad"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_centerInParent="true" />
+
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1">
+
+            <kr.ac.cau.goofcode.MTDC.OneKeyTurnOffButton
+                android:id="@+id/turn_off_button"
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:layout_alignParentTop="true"
+                android:textSize="12sp" />
+
+            <kr.ac.cau.goofcode.MTDC.OneKeyTakeoffButton
+                android:id="@+id/take_off_button"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_alignParentBottom="true"
+                android:textSize="12sp" />
+
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="3">
+
+            <kr.ac.cau.goofcode.MTDC.ControlPad
+                android:id="@+id/right_control_pad"
+                android:layout_width="326dp"
+                android:layout_height="323dp"
+                android:layout_centerHorizontal="true"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentTop="true" />
+        </RelativeLayout>
+
+    </LinearLayout>
+
+</FrameLayout>
+
+

@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">MTDC</string>
+    <string name="takeoff_btn_text">Take Off</string>
+    <string name="turnoff_btn_text">Off</string>
+</resources>
