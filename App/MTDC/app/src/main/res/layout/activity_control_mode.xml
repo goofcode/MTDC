@@ -46,6 +46,16 @@
                 android:layout_alignParentTop="true"
                 android:textSize="12sp" />
 
+            <kr.ac.cau.goofcode.MTDC.OneKeyLandingButton
+                android:id="@+id/landing_button"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:textSize="12sp"
+                android:layout_marginBottom="20dp"
+                android:layout_above="@+id/take_off_button"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentStart="true" />
+
             <kr.ac.cau.goofcode.MTDC.OneKeyTakeoffButton
                 android:id="@+id/take_off_button"
                 android:layout_width="match_parent"

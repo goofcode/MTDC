@@ -1,7 +1,5 @@
 package kr.ac.cau.goofcode.MTDC;
 
-import android.app.ActivityManager;
-import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -26,11 +24,10 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
     private TimerTask sendControlDataTimerTask;
     private byte[] controlData = new byte[10];
 
-    private final int TUNE_RUDD = 0;
-    private final int TUNE_ELEV = 0;
-    private final int TUNE_AILE = 0;
-
-    private int msg_mode  = 0;//????
+    private int tuneRudd = 0;
+    private int tuneElev = -1;
+    private int tuneAile = -4;
+    private int msg_mode = 0;//????
     private int msg_onestop = 0;
     private int msg_speed = 0;
     private int msg_photo = 0;
@@ -47,8 +44,8 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
         setContentView(R.layout.activity_control_mode);
 
         // get control pad
-        leftControlPad = (ControlPad)findViewById(R.id.left_control_pad);
-        rightControlPad = (ControlPad)findViewById(R.id.right_control_pad);
+        leftControlPad = (ControlPad) findViewById(R.id.left_control_pad);
+        rightControlPad = (ControlPad) findViewById(R.id.right_control_pad);
 
         // start streaming
         Log.i(TAG, "starting video");
@@ -63,26 +60,33 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
         // start sending control message
         startSendMsg();
     }
+
     @Override
     protected void onDestroy() {
-        super.onDestroy();
+        stopSendMsg();
         cameraManagel.stopGetCrt();
         cameraManagel.set_live_listener(null);
         cameraManagel.setContext(null);
         cameraManagel.stopPlay();
         cameraManagel.exitApk();
-        ((ActivityManager)getSystemService(Context.ACTIVITY_SERVICE)).killBackgroundProcesses(getPackageName());
-
-        stopSendMsg();
+        super.onDestroy();
     }
+
     @Override
     protected void onPause() {
         super.onPause();
 
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+    }
+
     public void startSendMsg() {
-        if ((this.sendControlDataTimer != null) && (this.sendControlDataTimerTask != null)) { stopSendMsg();}
+        if ((this.sendControlDataTimer != null) && (this.sendControlDataTimerTask != null)) {
+            stopSendMsg();
+        }
 
         Log.e(TAG, "Start Send Control Data");
         Log.e(TAG, "Enabling Send Data");
@@ -91,31 +95,41 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
         this.sendControlDataTimer = new Timer();
         this.sendControlDataTimerTask = new TimerTask() {
             public void run() {
-                int thro = leftControlPad.getVertical();
-                int rudd = leftControlPad.getHorizontal();
-                int elev = rightControlPad.getVertical();
-                int aile = rightControlPad.getHorizontal();
+                int msgTuneElev = tuneElev + 32;
+                int msgTuneRudd = tuneRudd + 32;
+                int msgTuneAile = tuneAile + 32;
+                int msgThro = leftControlPad.getVertical();
+                int msgRudd = leftControlPad.getHorizontal();
+                int msgElev = rightControlPad.getVertical();
+                int msgAile = rightControlPad.getHorizontal();
 
-                // Log.i(TAG, thro +", "+ rudd +", "+ elev +", "+ aile + ", "+ msg_takeoff);
+                msgTuneAile = msgTuneAile > 31?msgTuneAile:32-msgTuneAile;
+                msgTuneElev = msgTuneElev > 31?msgTuneElev:32-msgTuneElev;
 
-                controlData[0] = (byte) thro;
-                controlData[1] = (byte) elev;
-                controlData[2] = (byte) rudd;
-                controlData[3] = (byte) aile;
+                if (msgElev == 128) msgElev = Byte.MIN_VALUE;
+                else msgElev = msgElev > 128 ? msgElev - 128 : 255 - msgElev;
+                if (msgRudd < 128) msgRudd = 127 - msgRudd;
+                if (msgAile < 128) msgAile = 127 - msgAile;
+
+                controlData[0] = (byte) msgThro;
+                controlData[1] = (byte) msgElev;
+                controlData[2] = (byte) msgRudd;
+                controlData[3] = (byte) msgAile;
                 controlData[4] = 32;
-                controlData[5] = (byte) (TUNE_ELEV + msg_mode + msg_speed);
-                controlData[6] = (byte) (TUNE_RUDD + msg_photo + msg_record );
-                controlData[7] = (byte) (TUNE_AILE + msg_takeoff + msg_head );
+                controlData[5] = (byte) (msg_mode + msg_speed + msgTuneElev);
+                controlData[6] = (byte) (msg_photo + msg_record + msgTuneRudd);
+                controlData[7] = (byte) (msg_head + msg_takeoff + msgTuneAile);
                 controlData[8] = (byte) (msg_tinyreset + msg_onestop + msg_landing);
                 controlData[9] = (byte) ((controlData[0] ^ controlData[1] ^ controlData[2] ^ controlData[3]
-                        ^ controlData[4] ^ controlData[5] ^ controlData[6] ^ controlData[7] ^controlData[8]) + 85);
+                        ^ controlData[4] ^ controlData[5] ^ controlData[6] ^ controlData[7] ^ controlData[8]) + 85);
                 cameraManagel.sendCtrlData(controlData, controlData.length);
             }
         };
 
         // send control data every 40 ms
-        sendControlDataTimer.schedule(sendControlDataTimerTask , 0L, 40L);
+        sendControlDataTimer.schedule(sendControlDataTimerTask, 0L, 40L);
     }
+
     private void stopSendMsg() {
         Ipcameral.setEnableSendData(0);
         if (this.sendControlDataTimer != null) {
@@ -129,12 +143,12 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
         }
     }
 
-    public CameraManagel getCameraManagel(){
+    public CameraManagel getCameraManagel() {
         return cameraManagel;
     }
 
 
-    public void oneKeyTurnOff(){
+    public void oneKeyTurnOff() {
         msg_onestop = 16;
         Runnable endTurnOff = new Runnable() {
             @Override
@@ -144,7 +158,8 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
         };
         new Handler().postDelayed(endTurnOff, 1000L);
     }
-    public void oneKeyTakeoff(){
+
+    public void oneKeyTakeoff() {
         msg_takeoff = 64;
         msg_landing = 0;
         Runnable endTakeOff = new Runnable() {
@@ -155,7 +170,8 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
         };
         new Handler().postDelayed(endTakeOff, 1000L);
     }
-    public void oneKeyLanding(){
+
+    public void oneKeyLanding() {
         msg_landing = 8;
         msg_takeoff = 0;
         Runnable endLanding = new Runnable() {
@@ -169,9 +185,14 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
 
 
     @Override
-    public void on_connect(int paramInt) {}
+    public void on_connect(int paramInt) {
+    }
+
     @Override
-    public void on_record(int paramInt) {}
+    public void on_record(int paramInt) {
+    }
+
     @Override
-    public void on_video(int paramInt) {}
+    public void on_video(int paramInt) {
+    }
 }
