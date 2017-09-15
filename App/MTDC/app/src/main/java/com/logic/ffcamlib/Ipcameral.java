@@ -137,17 +137,12 @@ public class Ipcameral {
     public void videoDataStream(int paramInt1, int paramInt2, int paramInt3, byte[] paramArrayOfByte) {}
     public void vodDataStream(int paramInt1, int paramInt2, byte[] paramArrayOfByte) {}
     public void softDecodeStream(int paramInt1, int paramInt2, int index, byte[] paramArrayOfByte) {
-        if (paramArrayOfByte == null) {
-            return;
-        }
+        if (paramArrayOfByte == null) { return; }
         mwidth = paramInt1;
         mheight = paramInt2;
         this.cam_mgr_listener.video_data(paramArrayOfByte, paramInt1, paramInt2);
-        index = 0;
-        while(index < CameraManagel.mList.size()) {
-            CameraManagel.mList.get(index).dataRecv(paramInt1, paramInt2, 0, paramArrayOfByte, 0);
-            index += 1;
-        }
+        for(index = 0; index <CameraManagel.mList.size(); index++)
+            CameraManagel.mList.get(index).dataRecv(mwidth, mheight, 0, paramArrayOfByte, 0);
     }
     public void hardDecodeStream(int paramInt1, int paramInt2, int paramInt3, byte[] paramArrayOfByte, int paramInt4) {}
     public void setAppCallBack(int paramInt1, int paramInt2) {}

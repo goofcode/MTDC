@@ -20,6 +20,11 @@ android {
             debuggable true
         }
     }
+    externalNativeBuild {
+        cmake {
+            path 'CMakeLists.txt'
+        }
+    }
 }
 
 dependencies {
@@ -32,4 +37,5 @@ dependencies {
     compile 'org.greenrobot:eventbus:3.0.0'
     testCompile 'junit:junit:4.12'
     compile files('libs/sym.jar')
+    compile project(':openCVLibrary330')
 }
