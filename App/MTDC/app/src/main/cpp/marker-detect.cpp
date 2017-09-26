@@ -7,8 +7,7 @@ using namespace cv;
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_kr_ac_cau_goofcode_mtdc_MainActivity_ConvertRGBtoGray(
-        JNIEnv *env, jobject instance, jlong matAddrInput, jlong matAddrResult) {
+Java_kr_ac_cau_goofcode_mtdc_MainActivity_ConvertRGBtoGray(JNIEnv *env, jobject instance, jlong matAddrInput, jlong matAddrResult) {
 
     Mat &matInput = *(Mat *)matAddrInput;
     Mat &matResult = *(Mat*)matAddrResult;
