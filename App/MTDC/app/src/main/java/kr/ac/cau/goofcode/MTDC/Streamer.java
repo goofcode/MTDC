@@ -15,10 +15,6 @@ import android.view.SurfaceView;
 import com.logic.ffcamlib.CameraManagel;
 import com.logic.ffcamlib.OnVideoDataRecv;
 
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
@@ -26,17 +22,19 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+// TODO: Optimize double buffering
 
-public class Streamer extends SurfaceView  implements SurfaceHolder.Callback, OnVideoDataRecv, Runnable {
+public class Streamer extends SurfaceView  implements SurfaceHolder.Callback, OnVideoDataRecv {
 
     private static final String TAG = "Streamer";
 
     private CameraManagel cameraManagel;
 
-    private SurfaceHolder surfaceHolder;
-    private static final BlockingQueue<VideoPacket> videoList = new LinkedBlockingQueue<>(5);
     private Thread drawThread;
+    private SurfaceHolder surfaceHolder;
     private Bitmap bm = null;
+
+    private static final BlockingQueue<VideoPacket> videoList = new LinkedBlockingQueue<>(5);
 
     static {
         try {
@@ -55,17 +53,18 @@ public class Streamer extends SurfaceView  implements SurfaceHolder.Callback, On
         cameraManagel = ((ControlModeActivity)context).getCameraManagel();
     }
 
-    public void surfaceCreated(SurfaceHolder paramSurfaceHolder){
+    public void surfaceCreated(SurfaceHolder surfaceHolder){
         cameraManagel.setOnDataRecvLisenner(this);
-        drawThread = new Thread(Streamer.this);
+        drawThread = new Thread(DrawingThread);
         drawThread.start();
     }
-    public void surfaceChanged(SurfaceHolder paramSurfaceHolder, int paramInt1, int paramInt2, int paramInt3) {
+    public void surfaceChanged(SurfaceHolder surfaceHolder, int paramInt1, int paramInt2, int paramInt3) {
     }
-    public void surfaceDestroyed(SurfaceHolder paramSurfaceHolder) {
+    public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
+        Log.e(TAG, "onSurfaceDestroy");
         cameraManagel.RemoveDataRecvLisenner(this);
         drawThread.interrupt();
-        surfaceHolder = null;
+
     }
 
     // On data receive
@@ -76,47 +75,51 @@ public class Streamer extends SurfaceView  implements SurfaceHolder.Callback, On
         // push video packet to blocking queue
         videoList.offer(new VideoPacket(bit, data.length, data, frameType, height, width));
     }
-    public native void ConvertRGBtoGray(long matAddrInput, long matAddrResult);
+    public native void convertRGBtoGray(long matAddrInput, long matAddrResult);
+    public native void detectMarker(long matAddrInput, long matAddrResult);
 
+    private class DrawingThread implements Runnable{
+        public void run() {
 
-    @Override
-    public void run() {
-        Log.i(TAG, "Video drawThread started");
+            while(bm == null) {
+                try { Thread.sleep(50); }
+                catch (InterruptedException e) { e.printStackTrace();}
+            }
 
-        while(true) {
-            if (videoList.isEmpty())
-                continue;
+            Log.i(TAG, "Video drawThread started");
 
-            // get one video packet
-            VideoPacket videoPacket = videoList.poll();
+            Matrix matrix = new Matrix();
+            matrix.postRotate(180.0F);
+            Bitmap bitmap = Bitmap.createBitmap(bm, 0, 0, bm.getWidth(), bm.getHeight(), matrix, true);
 
-            // make raw bitmap from video packet
-            Matrix rawMatrix = new Matrix();
-            rawMatrix.postRotate(180.0F);
-            Bitmap rawBitmap = Bitmap.createBitmap(bm, 0, 0, bm.getWidth(), bm.getHeight(), rawMatrix, true);
-            Bitmap detectBitmap = Bitmap.createBitmap(bm, 0, 0, bm.getWidth(), bm.getHeight(), rawMatrix, true);
-
-            rawBitmap.copyPixelsFromBuffer(ByteBuffer.wrap(videoPacket.mDataBuf));
-
-            // convert raw bitmap to gray bitmap
             Mat rawMat = new Mat();
             Mat detectMat = new Mat();
 
-            Utils.bitmapToMat(rawBitmap, rawMat);
-            ConvertRGBtoGray(rawMat.getNativeObjAddr(), detectMat.getNativeObjAddr());
-            Utils.matToBitmap(detectMat, detectBitmap);
+            while(true) {
+                if (videoList.isEmpty()) continue;
 
-            Canvas canvas = surfaceHolder.lockCanvas();
-            canvas.drawColor(Color.BLACK);
-            //canvas.drawBitmap(rawBitmap, null, new Rect(0, 0, canvas.getWidth(), canvas.getHeight()), null);
-            canvas.drawBitmap(detectBitmap, null, new Rect(0, 0, canvas.getWidth(), canvas.getHeight()), null);
-            surfaceHolder.unlockCanvasAndPost(canvas);
+                // get one video packet
+                VideoPacket videoPacket = videoList.poll();
 
-            if (!(rawBitmap.isRecycled())) continue;
-            rawBitmap.recycle();
+                // make raw bitmap from video packet
+                bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(videoPacket.mDataBuf));
+
+                //if tracking mode, show markers
+                if(((ControlModeActivity)getContext()).isTrackingMode())
+                {
+                    // detect marker on bitmap
+                    Utils.bitmapToMat(bitmap, rawMat);
+                    detectMarker(rawMat.getNativeObjAddr(), detectMat.getNativeObjAddr());
+                    Utils.matToBitmap(detectMat, bitmap);
+                }
+
+                Canvas canvas = surfaceHolder.lockCanvas();
+                //canvas.drawColor(Color.BLACK);
+                canvas.drawBitmap(bitmap, null, new Rect(0, 0, canvas.getWidth(), canvas.getHeight()), null);
+                surfaceHolder.unlockCanvasAndPost(canvas);
+            }
         }
     }
-
 
     // unused implement
     public void audioData(byte[] paramArrayOfByte, int paramInt1, int paramInt2, int paramInt3) {}

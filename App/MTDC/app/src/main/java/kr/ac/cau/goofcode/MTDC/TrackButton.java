@@ -5,16 +5,14 @@ import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.View;
 
-public class OneKeyTurnOffButton extends android.support.v7.widget.AppCompatButton {
-
-    public OneKeyTurnOffButton(Context context, @Nullable AttributeSet attrs){
+public class TrackButton extends android.support.v7.widget.AppCompatImageButton{
+    public TrackButton(Context context, @Nullable AttributeSet attrs){
         super(context, attrs);
         setOnClickListener(new clickListener());
-        setText(R.string.turnoff_btn_text);
     }
 
     private class clickListener implements OnClickListener{
         @Override
-        public void onClick(View view) {((ControlModeActivity)getContext()).oneKeyTurnOff();}
+        public void onClick(View view) {((ControlModeActivity)getContext()).track();}
     }
 }

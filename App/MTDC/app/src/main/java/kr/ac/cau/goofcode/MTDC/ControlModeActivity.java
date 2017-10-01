@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageButton;
 
 import com.logic.ffcamlib.CameraManagel;
 import com.logic.ffcamlib.Ipcameral;
@@ -19,11 +20,16 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
 
     private CameraManagel cameraManagel = new CameraManagel();
 
-    ControlPad leftControlPad, rightControlPad;
+    //components
+    private ControlPad leftControlPad, rightControlPad;
+    private PowerButton powerButton;
+    private TakeoffButton takeoffButton;
+    private LandButton landButton;
+
     private Timer sendControlDataTimer;
     private TimerTask sendControlDataTimerTask;
-    private byte[] controlData = new byte[10];
 
+    private byte[] controlData = new byte[10];
     private int tuneRudd = 0;
     private int tuneElev = -1;
     private int tuneAile = -4;
@@ -37,20 +43,23 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
     private int msg_landing = 0;
     private int msg_tinyreset = 0;
 
+    private boolean trackingMode = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(FEATURE_NO_TITLE);
         setContentView(R.layout.activity_control_mode);
 
-        // get control pad
+        // get components
         leftControlPad = (ControlPad) findViewById(R.id.left_control_pad);
         rightControlPad = (ControlPad) findViewById(R.id.right_control_pad);
+        powerButton = (PowerButton) findViewById(R.id.power_button);
+        takeoffButton = (TakeoffButton) findViewById(R.id.takeoff_button);
+        landButton = (LandButton) findViewById(R.id.land_button);
 
         // start streaming
-        Log.i(TAG, "starting video");
         cameraManagel.startPlay();
-        Log.i(TAG, "playing video");
         cameraManagel.play_video();
         cameraManagel.getCrt(this);
         cameraManagel.set_live_listener(this);
@@ -60,7 +69,6 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
         // start sending control message
         startSendMsg();
     }
-
     @Override
     protected void onDestroy() {
         stopSendMsg();
@@ -71,17 +79,18 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
         cameraManagel.exitApk();
         super.onDestroy();
     }
-
     @Override
     protected void onPause() {
+
         super.onPause();
-
     }
-
     @Override
-    protected void onResume() {
-        super.onResume();
+    protected void onResume() {super.onResume();}
+
+    public CameraManagel getCameraManagel() {
+        return cameraManagel;
     }
+    public boolean isTrackingMode(){return trackingMode;}
 
     public void startSendMsg() {
         if ((this.sendControlDataTimer != null) && (this.sendControlDataTimerTask != null)) {
@@ -98,13 +107,14 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
                 int msgTuneElev = tuneElev + 32;
                 int msgTuneRudd = tuneRudd + 32;
                 int msgTuneAile = tuneAile + 32;
+                msgTuneAile = msgTuneAile > 31?msgTuneAile:32-msgTuneAile;
+                msgTuneElev = msgTuneElev > 31?msgTuneElev:32-msgTuneElev;
+
+                //get values from controlpad
                 int msgThro = leftControlPad.getVertical();
                 int msgRudd = leftControlPad.getHorizontal();
                 int msgElev = rightControlPad.getVertical();
                 int msgAile = rightControlPad.getHorizontal();
-
-                msgTuneAile = msgTuneAile > 31?msgTuneAile:32-msgTuneAile;
-                msgTuneElev = msgTuneElev > 31?msgTuneElev:32-msgTuneElev;
 
                 if (msgElev == 128) msgElev = Byte.MIN_VALUE;
                 else msgElev = msgElev > 128 ? msgElev - 128 : 255 - msgElev;
@@ -129,7 +139,6 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
         // send control data every 40 ms
         sendControlDataTimer.schedule(sendControlDataTimerTask, 0L, 40L);
     }
-
     private void stopSendMsg() {
         Ipcameral.setEnableSendData(0);
         if (this.sendControlDataTimer != null) {
@@ -143,12 +152,7 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
         }
     }
 
-    public CameraManagel getCameraManagel() {
-        return cameraManagel;
-    }
-
-
-    public void oneKeyTurnOff() {
+    public void power() {
         msg_onestop = 16;
         Runnable endTurnOff = new Runnable() {
             @Override
@@ -158,8 +162,7 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
         };
         new Handler().postDelayed(endTurnOff, 1000L);
     }
-
-    public void oneKeyTakeoff() {
+    public void takeoff() {
         msg_takeoff = 64;
         msg_landing = 0;
         Runnable endTakeOff = new Runnable() {
@@ -170,8 +173,7 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
         };
         new Handler().postDelayed(endTakeOff, 1000L);
     }
-
-    public void oneKeyLanding() {
+    public void land() {
         msg_landing = 8;
         msg_takeoff = 0;
         Runnable endLanding = new Runnable() {
@@ -182,16 +184,34 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
         };
         new Handler().postDelayed(endLanding, 1000L);
     }
+    public void track(){
+        if(!trackingMode) {
+            leftControlPad.setVisibility(View.INVISIBLE);
+            rightControlPad.setVisibility(View.INVISIBLE);
+            takeoffButton.setVisibility(View.INVISIBLE);
+            landButton.setVisibility(View.INVISIBLE);
+            findViewById(R.id.control_layout).invalidate();
+            trackingMode = true;
+        }
+        else{
+            leftControlPad.setVisibility(View.VISIBLE);
+            rightControlPad.setVisibility(View.VISIBLE);
+            takeoffButton.setVisibility(View.VISIBLE);
+            landButton.setVisibility(View.VISIBLE);
+            findViewById(R.id.control_layout).invalidate();
+
+            trackingMode = false;
+        }
+    }
 
 
+    /* unused methods */
     @Override
     public void on_connect(int paramInt) {
     }
-
     @Override
     public void on_record(int paramInt) {
     }
-
     @Override
     public void on_video(int paramInt) {
     }
