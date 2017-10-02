@@ -55,7 +55,7 @@ public class Streamer extends SurfaceView  implements SurfaceHolder.Callback, On
 
     public void surfaceCreated(SurfaceHolder surfaceHolder){
         cameraManagel.setOnDataRecvLisenner(this);
-        drawThread = new Thread(DrawingThread);
+        drawThread = new Thread(new DrawingThread());
         drawThread.start();
     }
     public void surfaceChanged(SurfaceHolder surfaceHolder, int paramInt1, int paramInt2, int paramInt3) {
@@ -90,6 +90,7 @@ public class Streamer extends SurfaceView  implements SurfaceHolder.Callback, On
 
             Matrix matrix = new Matrix();
             matrix.postRotate(180.0F);
+
             Bitmap bitmap = Bitmap.createBitmap(bm, 0, 0, bm.getWidth(), bm.getHeight(), matrix, true);
 
             Mat rawMat = new Mat();
