@@ -13,6 +13,6 @@ public class TrackButton extends android.support.v7.widget.AppCompatImageButton{
 
     private class clickListener implements OnClickListener{
         @Override
-        public void onClick(View view) {((ControlModeActivity)getContext()).track();}
+        public void onClick(View view) {((ControlModeActivity)getContext()).onTrackButtonTouch();}
     }
 }

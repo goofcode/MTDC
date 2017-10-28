@@ -15,6 +15,6 @@ public class LandButton extends android.support.v7.widget.AppCompatImageButton {
 
     private class clickListener implements OnClickListener{
         @Override
-        public void onClick(View view) {((ControlModeActivity)getContext()).land();}
+        public void onClick(View view) {((ControlModeActivity)getContext()).onLandButtonTouch();}
     }
 }

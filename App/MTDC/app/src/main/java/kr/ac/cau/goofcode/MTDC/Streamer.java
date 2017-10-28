@@ -22,13 +22,14 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-// TODO: Optimize double buffering
-
 public class Streamer extends SurfaceView  implements SurfaceHolder.Callback, OnVideoDataRecv {
 
     private static final String TAG = "Streamer";
 
     private CameraManagel cameraManagel;
+
+    private Mat rawMat = new Mat();
+    private Mat detectMat = new Mat();
 
     private Thread drawThread;
     private SurfaceHolder surfaceHolder;
@@ -62,6 +63,7 @@ public class Streamer extends SurfaceView  implements SurfaceHolder.Callback, On
     }
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
         Log.e(TAG, "onSurfaceDestroy");
+        drawThread.interrupt();
         cameraManagel.RemoveDataRecvLisenner(this);
         drawThread.interrupt();
 
@@ -75,8 +77,9 @@ public class Streamer extends SurfaceView  implements SurfaceHolder.Callback, On
         // push video packet to blocking queue
         videoList.offer(new VideoPacket(bit, data.length, data, frameType, height, width));
     }
+
     public native void convertRGBtoGray(long matAddrInput, long matAddrResult);
-    public native void detectMarker(long matAddrInput, long matAddrResult);
+    public native int[] getTrackingControlData(long matAddrInput, long matAddrResult);
 
     private class DrawingThread implements Runnable{
         public void run() {
@@ -93,9 +96,6 @@ public class Streamer extends SurfaceView  implements SurfaceHolder.Callback, On
 
             Bitmap bitmap = Bitmap.createBitmap(bm, 0, 0, bm.getWidth(), bm.getHeight(), matrix, true);
 
-            Mat rawMat = new Mat();
-            Mat detectMat = new Mat();
-
             while(true) {
                 if (videoList.isEmpty()) continue;
 
@@ -110,14 +110,20 @@ public class Streamer extends SurfaceView  implements SurfaceHolder.Callback, On
                 {
                     // detect marker on bitmap
                     Utils.bitmapToMat(bitmap, rawMat);
-                    detectMarker(rawMat.getNativeObjAddr(), detectMat.getNativeObjAddr());
+                    ((ControlModeActivity) getContext()).trackCtrlData
+                            = getTrackingControlData(rawMat.getNativeObjAddr(), detectMat.getNativeObjAddr());
+                    ((ControlModeActivity) getContext()).isTrackCtrlDataUsable = true;
                     Utils.matToBitmap(detectMat, bitmap);
                 }
+                else
+                    ((ControlModeActivity) getContext()).isTrackCtrlDataUsable = false;
 
                 Canvas canvas = surfaceHolder.lockCanvas();
                 //canvas.drawColor(Color.BLACK);
-                canvas.drawBitmap(bitmap, null, new Rect(0, 0, canvas.getWidth(), canvas.getHeight()), null);
-                surfaceHolder.unlockCanvasAndPost(canvas);
+                if(canvas != null) {
+                    canvas.drawBitmap(bitmap, null, new Rect(0, 0, canvas.getWidth(), canvas.getHeight()), null);
+                    surfaceHolder.unlockCanvasAndPost(canvas);
+                }
             }
         }
     }

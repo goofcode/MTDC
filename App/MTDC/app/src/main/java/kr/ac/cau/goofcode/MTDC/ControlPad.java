@@ -27,7 +27,7 @@ public class ControlPad extends View {
         innerPaint.setColor(Color.rgb(255, 133, 133));
         outerPaint.setStyle(Paint.Style.FILL);
         outerPaint.setColor(Color.rgb(230, 230, 230));
-    }
+}
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
@@ -45,11 +45,6 @@ public class ControlPad extends View {
         canvas.drawCircle(curX, curY, INNER_RADIUS, innerPaint);
     }
 
-    public void initCurrent() {
-        curX = originX;
-        curY = originY;
-    }
-
     private int getPadValue(boolean isVertical) {
         final int MAX_VALUE = 256;
 
@@ -64,7 +59,7 @@ public class ControlPad extends View {
     public int getHorizontal() {
         return getPadValue(false);
     }
-
+    public void resetPad(){curX = originX; curY = originY;}
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -82,10 +77,8 @@ public class ControlPad extends View {
             }
         } else if (action == MotionEvent.ACTION_MOVE) {
             if (dragging) {
-                if (dist < MOVE_RADIUS) {
-                    curX = touchX;
-                    curY = touchY;
-                } else {
+                if (dist < MOVE_RADIUS) {curX = touchX; curY = touchY;}
+                else {
                     curX = (int) (MOVE_RADIUS * (touchX - originX) / dist + originX);
                     curY = (int) (MOVE_RADIUS * (touchY - originY) / dist + originY);
                 }

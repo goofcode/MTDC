@@ -15,7 +15,7 @@ public class TakeoffButton extends android.support.v7.widget.AppCompatImageButto
     private class clickListener implements OnClickListener{
         @Override
         public void onClick(View view) {
-            ((ControlModeActivity)getContext()).takeoff();
+            ((ControlModeActivity)getContext()).onTakeoffButtonTouch();
         }
     }
 }

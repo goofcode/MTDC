@@ -9,6 +9,7 @@ import android.widget.ImageButton;
 import com.logic.ffcamlib.CameraManagel;
 import com.logic.ffcamlib.Ipcameral;
 
+import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -26,13 +27,32 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
     private TakeoffButton takeoffButton;
     private LandButton landButton;
 
+    //threads
     private Timer sendControlDataTimer;
     private TimerTask sendControlDataTimerTask;
 
-    private byte[] controlData = new byte[10];
+    //tracking mode toggle
+    private boolean trackingMode = false;
+    public int[] trackCtrlData;
+    public boolean isTrackCtrlDataUsable = false;
+
+    //tuning factors
     private int tuneRudd = 0;
     private int tuneElev = -1;
-    private int tuneAile = -4;
+    private int tuneAile = -5;
+
+    //message data
+    private byte[] controlData = new byte[10];
+
+    private int msgThro;
+    private int msgRudd;
+    private int msgElev;
+    private int msgAile;
+
+    private int msgTuneElev;
+    private int msgTuneRudd;
+    private int msgTuneAile;
+
     private int msg_mode = 0;//????
     private int msg_onestop = 0;
     private int msg_speed = 0;
@@ -42,8 +62,6 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
     private int msg_head = 0;
     private int msg_landing = 0;
     private int msg_tinyreset = 0;
-
-    private boolean trackingMode = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,7 +99,7 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
     }
     @Override
     protected void onPause() {
-
+        finish();
         super.onPause();
     }
     @Override
@@ -93,40 +111,55 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
     public boolean isTrackingMode(){return trackingMode;}
 
     public void startSendMsg() {
-        if ((this.sendControlDataTimer != null) && (this.sendControlDataTimerTask != null)) {
+        if ((this.sendControlDataTimer != null) && (this.sendControlDataTimerTask != null))
             stopSendMsg();
-        }
 
         Log.e(TAG, "Start Send Control Data");
         Log.e(TAG, "Enabling Send Data");
         Ipcameral.setEnableSendData(1);
 
+
         this.sendControlDataTimer = new Timer();
         this.sendControlDataTimerTask = new TimerTask() {
             public void run() {
-                int msgTuneElev = tuneElev + 32;
-                int msgTuneRudd = tuneRudd + 32;
-                int msgTuneAile = tuneAile + 32;
+                msgTuneElev = tuneElev + 32;
+                msgTuneRudd = tuneRudd + 32;
+                msgTuneAile = tuneAile + 32;
+
                 msgTuneAile = msgTuneAile > 31?msgTuneAile:32-msgTuneAile;
                 msgTuneElev = msgTuneElev > 31?msgTuneElev:32-msgTuneElev;
 
-                //get values from controlpad
-                int msgThro = leftControlPad.getVertical();
-                int msgRudd = leftControlPad.getHorizontal();
-                int msgElev = rightControlPad.getVertical();
-                int msgAile = rightControlPad.getHorizontal();
+                if(!trackingMode) {
+                    //get values from control pad
+                    msgThro = leftControlPad.getVertical();
+                    msgRudd = leftControlPad.getHorizontal();
+                    msgElev = rightControlPad.getVertical();
+                    msgAile = rightControlPad.getHorizontal();
+                }
+                else{
+                    if(!isTrackCtrlDataUsable || trackCtrlData == null) {
+                        msgThro = msgRudd = msgElev = msgAile = 128;
+                    }
+                    else{
+                        msgThro = trackCtrlData[0];
+                        msgRudd = trackCtrlData[1];
+                        msgElev = trackCtrlData[2];
+                        msgAile = trackCtrlData[3];
+                    }
+                }
+
+                //String log = msgThro +", "+ msgRudd +", "+ msgElev +", "+ msgAile;
+                //Log.i(TAG, log);
+
 
                 if (msgElev == 128) msgElev = Byte.MIN_VALUE;
                 else msgElev = msgElev > 128 ? msgElev - 128 : 255 - msgElev;
                 if (msgRudd < 128) msgRudd = 127 - msgRudd;
                 if (msgAile < 128) msgAile = 127 - msgAile;
 
-                controlData[0] = (byte) msgThro;
-                controlData[1] = (byte) msgElev;
-                controlData[2] = (byte) msgRudd;
-                controlData[3] = (byte) msgAile;
-                controlData[4] = 32;
-                controlData[5] = (byte) (msg_mode + msg_speed + msgTuneElev);
+                controlData[0] = (byte) msgThro; controlData[1] = (byte) msgElev;
+                controlData[2] = (byte) msgRudd; controlData[3] = (byte) msgAile;
+                controlData[4] = 32; controlData[5] = (byte) (msg_mode + msg_speed + msgTuneElev);
                 controlData[6] = (byte) (msg_photo + msg_record + msgTuneRudd);
                 controlData[7] = (byte) (msg_head + msg_takeoff + msgTuneAile);
                 controlData[8] = (byte) (msg_tinyreset + msg_onestop + msg_landing);
@@ -152,7 +185,7 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
         }
     }
 
-    public void power() {
+    public void onPowerButtonTouch() {
         msg_onestop = 16;
         Runnable endTurnOff = new Runnable() {
             @Override
@@ -162,7 +195,7 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
         };
         new Handler().postDelayed(endTurnOff, 1000L);
     }
-    public void takeoff() {
+    public void onTakeoffButtonTouch() {
         msg_takeoff = 64;
         msg_landing = 0;
         Runnable endTakeOff = new Runnable() {
@@ -173,7 +206,7 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
         };
         new Handler().postDelayed(endTakeOff, 1000L);
     }
-    public void land() {
+    public void onLandButtonTouch() {
         msg_landing = 8;
         msg_takeoff = 0;
         Runnable endLanding = new Runnable() {
@@ -184,7 +217,7 @@ public class ControlModeActivity extends BaseActivity implements CameraManagel.n
         };
         new Handler().postDelayed(endLanding, 1000L);
     }
-    public void track(){
+    public void onTrackButtonTouch(){
         if(!trackingMode) {
             leftControlPad.setVisibility(View.INVISIBLE);
             rightControlPad.setVisibility(View.INVISIBLE);
