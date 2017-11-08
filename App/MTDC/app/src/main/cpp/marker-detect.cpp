@@ -154,55 +154,127 @@ Java_kr_ac_cau_goofcode_MTDC_Streamer_getTrackingControlData(
                         "c(%d, %d), area: %d\t %d %d \tt", cx, cy, area, r_height, l_height);
 
     /* CALCULATE Control data */
-    const int PROPER_DIST_SIZE_MAX_L1 = 6000;
-    const int PROPER_DIST_SIZE_MAX_L2 = 7500;
-    const int PROPER_DIST_SIZE_MIN_L1 = 4500;
-    const int PROPER_DIST_SIZE_MIN_L2 = 3000;
+    const int PROPER_DIST_SIZE_MAX_L1 = 3000;
+    const int PROPER_DIST_SIZE_MAX_L2 = 4500;
+    const int PROPER_DIST_SIZE_CHECK_POINT = 5000;
+    const int PROPER_DIST_SIZE_MIN_L1 = 1000;
+    const int PROPER_DIST_SIZE_MIN_L2 = 500;
 
     const int CENTER_X = 320;
     const int CENTER_Y = 240;
-    const int HORIZONTAL_LIMIT = 45;
-    const int HORIZONTAL_MAX_LIMIT = 80;
-    const int VERTICAL_MAXLIMIT = 50;
-    const int VERTICAL_LIMIT = 30;
-    const double ROTATE_LIMIT = 1.07;
+    const int HORIZONTAL_LIMIT = 50;
+    const int HORIZONTAL_MAX_LIMIT = 90;
+    const int VERTICAL_MAXLIMIT = 65;
+    const int VERTICAL_LIMIT = 40;
+    const double ROTATE_LIMIT_R = 0.96;
+    const double ROTATE_LIMIT_L = 1.04;
 
-    const int HORIZONTAL_LMOVE = 22;
-    const int HORIZONTAL_RMOVE = 13;
-    const int HORIZONTAL_MAX_LMOVE = 35;
-    const int HORIZONTAL_MAX_RMOVE = 25;
 
+    const int HORIZONTAL_LMOVE = 17;
+    const int HORIZONTAL_RMOVE = 15;
+    const int HORIZONTAL_MAX_LMOVE = 28;
+    const int HORIZONTAL_MAX_RMOVE = 26;
+
+    const int HORIZONTAL_LMOVE_CLOSED = 13;
+    const int HORIZONTAL_RMOVE_CLOSED = 16;
+    const int HORIZONTAL_MAX_LMOVE_CLOSED = 18;
+    const int HORIZONTAL_MAX_RMOVE_CLOSED = 21;
 
     int thro = 128, rudd = 128, elev = 128, aile = 128;
+    double RotateRate;
 
     std::string log_message;
 
-    //front and back move
-    if (area < PROPER_DIST_SIZE_MIN_L2) {elev += 13; log_message += "front\t";}
-    else if(area < PROPER_DIST_SIZE_MIN_L1){elev += 5; log_message += "front\t";}
-    else if(PROPER_DIST_SIZE_MAX_L2 < area) {elev -= 18; log_message += "back \t";}
-    else if (PROPER_DIST_SIZE_MAX_L1 < area) {elev -= 7; log_message += "back \t";}
+    //if marker closed
+    if(area>PROPER_DIST_SIZE_MAX_L1){
+        //front and back move
+        if(PROPER_DIST_SIZE_MAX_L2 < area) {elev -= 55; log_message += "C-backStrong \t";}
+        else if (PROPER_DIST_SIZE_MAX_L1 < area) {elev -= 35; log_message += "C-back \t";}
 
-    //up and down move
-    if (cy < CENTER_Y - VERTICAL_MAXLIMIT) {thro += 20; log_message += "upStrong \t";}
-    else if (cy < CENTER_Y - VERTICAL_LIMIT) {thro += 10; log_message += "up \t";}
-    else if (cy > CENTER_Y + VERTICAL_MAXLIMIT) {thro -= 25; log_message += "downStrong \t";}
-    else if (cy > CENTER_Y + VERTICAL_LIMIT) {thro -= 15; log_message += "down \t";}
+        //up and down move
+        if (cy < CENTER_Y - VERTICAL_MAXLIMIT) {thro += 25; log_message += "C-upStrong \t";}
+        else if (cy < CENTER_Y - VERTICAL_LIMIT) {thro += 17; log_message += "C-up \t";}
+        else if (cy > CENTER_Y + VERTICAL_MAXLIMIT) {thro -= 40; log_message += "C-downStrong \t";}
+        else if (cy > CENTER_Y + VERTICAL_LIMIT) {thro -= 18; log_message += "C-down \t";}
 
-    //left and right move
-    if((double)r_height/l_height > ROTATE_LIMIT){
-        rudd -= 5; aile -= HORIZONTAL_LMOVE; log_message += "clockwise\t";
+        //left and right move
+        RotateRate=(double)r_height/l_height;
+
+        if(RotateRate > ROTATE_LIMIT_L){
+            rudd += 35; aile -= HORIZONTAL_LMOVE_CLOSED; log_message += "C-clockwise\t";
+        }
+        else if (RotateRate < ROTATE_LIMIT_R){
+            rudd -= 35; aile += HORIZONTAL_RMOVE_CLOSED; log_message += "C-counter-clk\t";
+        }
+        else {
+            if (cx < CENTER_X - HORIZONTAL_MAX_LIMIT) {aile -= HORIZONTAL_MAX_LMOVE_CLOSED; log_message += "C-leftStrong\t";}
+            else if(cx < CENTER_X - HORIZONTAL_LIMIT) {aile -= HORIZONTAL_LMOVE_CLOSED; log_message += "C-left\t";}
+            else if (cx > CENTER_X + HORIZONTAL_MAX_LIMIT) {aile += HORIZONTAL_MAX_RMOVE_CLOSED; log_message += "C-rightStrong\t";}
+            else if (cx > CENTER_X + HORIZONTAL_LIMIT) {aile += HORIZONTAL_RMOVE_CLOSED; log_message += "C-right\t";}
+        }
     }
-    else if ((double)l_height/r_height > ROTATE_LIMIT){
-        rudd += 5; aile += HORIZONTAL_RMOVE; log_message += "counter-clk\t";
+    else if(area<PROPER_DIST_SIZE_MIN_L1){
+        //front and back move
+        if (area < PROPER_DIST_SIZE_MIN_L2) {elev += 27; log_message += "F-frontStrong\t";}
+        else if(area < PROPER_DIST_SIZE_MIN_L1){elev += 18; log_message += "front\t";}
+
+
+        //up and down move
+        if (cy < CENTER_Y - VERTICAL_MAXLIMIT) {thro += 29; log_message += "F-upStrong \t";}
+        else if (cy < CENTER_Y - VERTICAL_LIMIT) {thro += 18; log_message += "F-up \t";}
+        else if (cy > CENTER_Y + VERTICAL_MAXLIMIT) {thro -= 45; log_message += "F-downStrong \t";}
+        else if (cy > CENTER_Y + VERTICAL_LIMIT) {thro -= 23; log_message += "F-down \t";}
+
+        //left and right move
+        RotateRate=(double)r_height/l_height;
+
+        if(RotateRate > ROTATE_LIMIT_L){
+            rudd += 30; aile -= HORIZONTAL_LMOVE-5; log_message += "F-clockwise\t";
+        }
+        else if (RotateRate < ROTATE_LIMIT_R){
+            rudd -= 30; aile += HORIZONTAL_RMOVE-5; log_message += "F-counter-clk\t";
+        }
+        else {
+            if (cx < CENTER_X - HORIZONTAL_MAX_LIMIT) {aile -= HORIZONTAL_MAX_LMOVE; log_message += "F-leftStrong\t";}
+            else if(cx < CENTER_X - HORIZONTAL_LIMIT) {aile -= HORIZONTAL_LMOVE; log_message += "F-left\t";}
+            else if (cx > CENTER_X + HORIZONTAL_MAX_LIMIT) {aile += HORIZONTAL_MAX_RMOVE; log_message += "F-rightStrong\t";}
+            else if (cx > CENTER_X + HORIZONTAL_LIMIT) {aile += HORIZONTAL_RMOVE; log_message += "F-right\t";}
+        }
+
     }
-    else {
-        if (cx < CENTER_X - HORIZONTAL_MAX_LIMIT) {aile -= HORIZONTAL_MAX_LMOVE; log_message += "leftStrong\t";}
-        else if(cx < CENTER_X - HORIZONTAL_LIMIT) {aile -= HORIZONTAL_LMOVE; log_message += "left\t";}
-        else if (cx > CENTER_X + HORIZONTAL_MAX_LIMIT) {aile += HORIZONTAL_MAX_RMOVE; log_message += "rightStrong\t";}
-        else if (cx > CENTER_X + HORIZONTAL_LIMIT) {aile += HORIZONTAL_RMOVE; log_message += "right\t";}
+    else if(area>PROPER_DIST_SIZE_MIN_L1&&area<PROPER_DIST_SIZE_MAX_L1){
+        if(PROPER_DIST_SIZE_MAX_L2 < area) {elev -= 45; log_message += "C-backStrong \t";}
+        else if (PROPER_DIST_SIZE_MAX_L1 < area) {elev -= 30; log_message += "C-back \t";}
+        else if (area < PROPER_DIST_SIZE_MIN_L2) {elev += 25; log_message += "frontStrong\t";}
+        else if(area < PROPER_DIST_SIZE_MIN_L1){elev += 15; log_message += "front\t";}
+
+
+        //up and down move
+        if (cy < CENTER_Y - VERTICAL_MAXLIMIT) {thro += 29; log_message += "upStrong \t";}
+        else if (cy < CENTER_Y - VERTICAL_LIMIT) {thro += 19; log_message += "up \t";}
+        else if (cy > CENTER_Y + VERTICAL_MAXLIMIT) {thro -= 45; log_message += "downStrong \t";}
+        else if (cy > CENTER_Y + VERTICAL_LIMIT) {thro -= 25; log_message += "down \t";}
+
+        //left and right move
+        RotateRate=(double)r_height/l_height;
+
+        if(RotateRate > ROTATE_LIMIT_L){
+            rudd += 30; aile -= HORIZONTAL_LMOVE-5; log_message += "clockwise\t";
+        }
+        else if (RotateRate < ROTATE_LIMIT_R){
+            rudd -= 30; aile += HORIZONTAL_RMOVE-5; log_message += "counter-clk\t";
+        }
+        else {
+            if (cx < CENTER_X - HORIZONTAL_MAX_LIMIT) {aile -= HORIZONTAL_MAX_LMOVE_CLOSED; log_message += "leftStrong\t";}
+            else if(cx < CENTER_X - HORIZONTAL_LIMIT) {aile -= HORIZONTAL_LMOVE_CLOSED; log_message += "left\t";}
+            else if (cx > CENTER_X + HORIZONTAL_MAX_LIMIT) {aile += HORIZONTAL_MAX_RMOVE_CLOSED; log_message += "rightStrong\t";}
+            else if (cx > CENTER_X + HORIZONTAL_LIMIT) {aile += HORIZONTAL_RMOVE_CLOSED; log_message += "right\t";}
+        }
+
     }
+
     __android_log_print(ANDROID_LOG_INFO, "Moving", "%s", log_message.c_str());
+    __android_log_print(ANDROID_LOG_INFO, "ratio", "%f", RotateRate);
 
 
     int track_ctrl[4] = {thro, rudd, elev, aile};
